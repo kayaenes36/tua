@@ -1,0 +1,123 @@
+#include <iostream>
+#include <string>
+#include <cctype> // tolower fonksiyonu için
+#include <clocale>
+
+using namespace std;
+
+// Kullanıcıya Evet/Hayır sorusu sormak için yardımcı fonksiyon
+bool evetMi(string soru) {
+    string cevap;
+    cout << "\n[?] " << soru << " (e/h): ";
+    cin >> cevap;
+    return (cevap == "e" || cevap == "E");
+}
+
+// Girilen metni tamamen küçük harfe çeviren yardımcı fonksiyon
+string kucukHarfeCevir(string metin) {
+    string sonuc = metin;
+    for (int i = 0; i < sonuc.length(); i++) {
+        sonuc[i] = tolower((unsigned char)sonuc[i]);
+    }
+    return sonuc;
+}
+
+// Şemadaki ortak "Etrafından Dolaşılabilirlik" mantık bloğu
+void etrafindanDolasmaSenaryosu() {
+    if (evetMi("Etrafından dolaşılabilir bir engel mi?")) {
+        cout << "  -> Uygun rotayı hesapla.\n";
+        cout << "  -> Hedef konuma doğru harekete başla.\n";
+        cout << "  -> BİTİR.\n";
+    } else {
+        cout << "  -> Yüksekliğini ve eğimini hesapla.\n";
+        cout << "  -> Araç için uygunluğunu hesapla.\n";
+        
+        if (evetMi("Üzerinden geçilebilir bir engel mi?")) {
+            cout << "  -> Uydu, IMU, Enkoder, Eğim Ölçerden durum verisi alınması.\n";
+            cout << "  -> Verilerini yorumla.\n";
+            cout << "  -> En uygun rotayı oluştur.\n";
+            cout << "  -> Engel üzerindeki rotayı oluştur.\n";
+            cout << "  -> Hedef konuma doğru harekete başla.\n";
+            cout << "  -> BİTİR.\n";
+        } else {
+            cout << "  -> Uydu görüntülerini al.\n";
+            cout << "  -> Uydu görüntülerinden en uygun rotayı hesapla.\n";
+            cout << "  -> (Sistem yeni rotaya göre başa döner)\n";
+        }
+    }
+}
+
+int main() {
+    // Konsolda Türkçe karakter desteğini aç
+    setlocale(LC_ALL, "Turkish");
+
+    cout << "=== ROVER ENGEL AŞMA SİMÜLASYONU BAŞLADI ===\n\n";
+
+    cout << "-> Kamera & Lidar'dan veri al.\n";
+    cout << "-> Uydu görüntülerini al.\n";
+    cout << "-> IMU-Enkoder-Eğim Ölçerden durum verisi alınması.\n";
+
+    if (!evetMi("Veriler araca alındı mı?")) {
+        cout << "  -> Veri alma işlemini tekrardan başlat! (Simülasyon sonlanıyor...)\n";
+        return 0;
+    }
+
+    cout << "-> Verileri yorumla ve uygun rotayı oluştur.\n";
+    cout << "-> Harekete başla.\n";
+
+    if (!evetMi("Engel algılandı mı?")) {
+        cout << "  -> Rotayı takip etmeye devam et.\n";
+        return 0;
+    }
+
+    // ENGEL TANIMLAMA AŞAMASI (String ile)
+    string engelGirdisi;
+    cout << "\n[?] Engeli Tanımla (Kaya, Krater, Kum Tepesi yazabilirsiniz): ";
+    
+    // cin yerine getline kullanıyoruz ki boşluklu kelimeleri (Kum Tepesi) tam okuyabilsin
+    cin >> ws; // Önceki girdilerden kalan boşluk karakterlerini temizler
+    getline(cin, engelGirdisi); 
+
+    // Girdiyi tamamen küçük harfe çeviriyoruz (örn: "KaYa" -> "kaya")
+    string islenmisGirdi = kucukHarfeCevir(engelGirdisi);
+
+    // ŞEMADAKİ KARAR AĞAÇLARI (if - else if yapısı ile kelime arama)
+    if (islenmisGirdi.find("kaya") != string::npos) {
+        // İçinde "kaya" geçiyorsa KAYA senaryosu
+        cout << "\n--- KAYA Algılandı ---\n";
+        etrafindanDolasmaSenaryosu();
+        
+    } 
+    else if (islenmisGirdi.find("krater") != string::npos) {
+        // İçinde "krater" geçiyorsa KRATER senaryosu
+        cout << "\n--- KRATER Algılandı ---\n";
+        if (evetMi("Krater birden fazla mı?")) {
+            cout << "  -> Kraterler arasındaki mesafeyi hesapla.\n";
+            if (evetMi("Kraterler arasındaki mesafe rover'ın geçmesine uygun mu?")) {
+                cout << "  -> Arasından geç, yoluna devam et.\n";
+            } else {
+                etrafindanDolasmaSenaryosu();
+            }
+        } else {
+            etrafindanDolasmaSenaryosu();
+        }
+        
+    } 
+    else if (islenmisGirdi.find("kum") != string::npos) {
+        // İçinde "kum" geçiyorsa KUM TEPESİ senaryosu
+        cout << "\n--- KUM TEPESİ Algılandı ---\n";
+        if (evetMi("Araç üzerinden geçebileceği bir engel mi?")) {
+            cout << "  -> Engel üzerindeki rotayı oluştur.\n";
+            cout << "  -> Hedef konuma doğru harekete başla.\n";
+        } else {
+            etrafindanDolasmaSenaryosu();
+        }
+        
+    } 
+    else {
+        cout << "\nGeçersiz bir engel tipi girdiniz. Lütfen 'Kaya', 'Krater' veya 'Kum' kelimelerinden birini kullanın.\n";
+    }
+
+    cout << "\n=== SİMÜLASYON BİTTİ ===\n";
+    return 0;
+}
